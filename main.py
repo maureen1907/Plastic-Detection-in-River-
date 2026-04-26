@@ -13,7 +13,7 @@ class PredictRequest(BaseModel):
 
 router = APIRouter(prefix="/api")
 
-app.get("/")
+@app.get("/")
 async def root():
     return {"message": "Welcome to the Plastic Detection API. Use /api/predict to get predictions and /api/annotate to get annotated images."}
 
