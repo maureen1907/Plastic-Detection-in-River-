@@ -5,6 +5,8 @@ import cv2
 
 def base64_to_image(base64_string):
     # Decode the base64 string to bytes
+    print("BASE64 LENGTH:", len(base64_string))
+    print("LAST 20 CHARS:", base64_string[-20:])
     image_data = base64.b64decode(base64_string)
     
     # Convert bytes to a NumPy array

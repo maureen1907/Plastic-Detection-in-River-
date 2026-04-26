@@ -1,4 +1,3 @@
-# service.py
 
 def run_inference(model, img):
     return model(img)[0]

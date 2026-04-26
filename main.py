@@ -1,25 +1,28 @@
+from fastapi import FastAPI, APIRouter, UploadFile, File, Form
+from PIL import Image
+import io
 
-from fastapi import APIRouter, FastAPI
-from pydantic import BaseModel
 from model import model
-from utils import base64_to_image, image_to_base64
 from service import run_inference, extract_detections, annotate_image
+from utils import image_to_base64
 
 app = FastAPI()
-
-class PredictRequest(BaseModel):
-    uuid: str
-    image: str
-
 router = APIRouter(prefix="/api")
 
-@app.get("/")
+@router.get("/")
 async def root():
-    return {"message": "Welcome to the Plastic Detection API. Use /api/predict to get predictions and /api/annotate to get annotated images."}
+    return {
+        "message": "Plastic Detection API. Use /api/predict or /api/annotate"
+    }
+
 
 @router.post("/predict")
-async def predict(req: PredictRequest):
-    img = base64_to_image(req.image)
+async def predict(
+    uuid: str = Form(...),
+    file: UploadFile = File(...)
+):
+    image_bytes = await file.read()
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
     results = run_inference(model, img)
     detections, boxes = extract_detections(results)
@@ -27,7 +30,7 @@ async def predict(req: PredictRequest):
     speed = results.speed
 
     return {
-        "uuid": req.uuid,
+        "uuid": uuid,
         "count": len(detections),
         "detections": detections,
         "boxes": boxes,
@@ -36,24 +39,26 @@ async def predict(req: PredictRequest):
         "speed_postprocess_ms": speed["postprocess"]
     }
 
-
 @router.post("/annotate")
-async def annotate(req: PredictRequest):
-    img = base64_to_image(req.image)
+async def annotate(
+    uuid: str = Form(...),
+    file: UploadFile = File(...)
+):
+    image_bytes = await file.read()
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
     results = run_inference(model, img)
     annotated_img = annotate_image(results)
 
     encoded_img = image_to_base64(annotated_img)
+    detections, boxes = extract_detections(results)
 
     return {
-        "uuid": req.uuid,
+        "uuid": uuid,
         "image": encoded_img,
-        "detections": [...],
-        "boxes": [...],
-        "image": "base64..."
+        "detections": detections,
+        "boxes": boxes
     }
-
 
 
 app.include_router(router)
