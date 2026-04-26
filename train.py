@@ -1,8 +1,11 @@
 import logging
 import datetime
-from model import model
+from ultralytics import YOLO
 
 logging.basicConfig(level=logging.INFO)
+
+# Load the 'yolov8m' model from YOLO
+model = YOLO('yolov8m.pt')
 
 logging.info(f"Training started at {datetime.datetime.now()}")
 
