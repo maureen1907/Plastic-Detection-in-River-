@@ -10,6 +10,13 @@ from utils import base64_to_image, image_to_base64
 app = FastAPI()
 router = APIRouter(prefix="/api")
 
+
+@app.get("/")
+async def root():
+    return {
+        "message": "wassup slayer. use /api/predict or /api/annotate"
+    }
+
 # Thread pool for running ML inference without blocking the event loop
 executor = ThreadPoolExecutor(max_workers=2)
 
@@ -17,13 +24,6 @@ executor = ThreadPoolExecutor(max_workers=2)
 class ImagePayload(BaseModel):
     uuid: str
     image: str  # base64 encoded image
-
-
-@router.get("/")
-async def root():
-    return {
-        "message": "Plastic Detection API. Use /api/predict or /api/annotate"
-    }
 
 
 def run_inference_sync(model, img):
@@ -71,6 +71,9 @@ async def annotate(payload: ImagePayload):
         "detections": detections,
         "boxes": boxes
     }
+
+
+app.include_router(router)
 
 
 if __name__ == "__main__":
