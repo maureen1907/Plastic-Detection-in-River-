@@ -31,6 +31,13 @@ def run_inference_sync(model, img):
     return model(img)[0]
 
 
+@router.get("/")
+async def api_root():
+    return {
+        "message": "Plastic Detection API. Use /api/predict or /api/annotate"
+    }
+
+
 @router.post("/predict")
 async def predict(payload: ImagePayload):
     img = base64_to_image(payload.image)
