@@ -1,13 +1,20 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, Form
-from PIL import Image
+from fastapi import FastAPI, APIRouter
+from pydantic import BaseModel
 import io
+import base64
 
 from model import model
 from service import run_inference, extract_detections, annotate_image
-from utils import image_to_base64
+from utils import base64_to_image, image_to_base64
 
 app = FastAPI()
 router = APIRouter(prefix="/api")
+
+
+class ImagePayload(BaseModel):
+    uuid: str
+    image: str  # base64 encoded image
+
 
 @router.get("/")
 async def root():
@@ -17,12 +24,8 @@ async def root():
 
 
 @router.post("/predict")
-async def predict(
-    uuid: str = Form(...),
-    file: UploadFile = File(...)
-):
-    image_bytes = await file.read()
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+async def predict(payload: ImagePayload):
+    img = base64_to_image(payload.image)
 
     results = run_inference(model, img)
     detections, boxes = extract_detections(results)
@@ -30,7 +33,7 @@ async def predict(
     speed = results.speed
 
     return {
-        "uuid": uuid,
+        "uuid": payload.uuid,
         "count": len(detections),
         "detections": detections,
         "boxes": boxes,
@@ -39,13 +42,10 @@ async def predict(
         "speed_postprocess_ms": speed["postprocess"]
     }
 
+
 @router.post("/annotate")
-async def annotate(
-    uuid: str = Form(...),
-    file: UploadFile = File(...)
-):
-    image_bytes = await file.read()
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+async def annotate(payload: ImagePayload):
+    img = base64_to_image(payload.image)
 
     results = run_inference(model, img)
     annotated_img = annotate_image(results)
@@ -54,11 +54,17 @@ async def annotate(
     detections, boxes = extract_detections(results)
 
     return {
-        "uuid": uuid,
+        "uuid": payload.uuid,
         "image": encoded_img,
         "detections": detections,
         "boxes": boxes
     }
 
 
-app.include_router(router)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
