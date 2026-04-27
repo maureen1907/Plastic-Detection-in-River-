@@ -34,7 +34,7 @@ def run_inference_sync(model, img):
 @router.get("/")
 async def api_root():
     return {
-        "message": "Plastic Detection API. Use /api/predict or /api/annotate"
+        "message": "good job! rmr u can use /api/predict or /api/annotate"
     }
 
 
