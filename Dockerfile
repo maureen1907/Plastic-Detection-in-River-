@@ -1,10 +1,9 @@
-# Use stable slim Python image
-FROM python:3.11-slim-bookworm
+# =============================================================================
+# Stage 1: Build dependencies (compile Python packages)
+# =============================================================================
+FROM python:3.11-slim-bookworm AS builder
 
-# Set working directory
-WORKDIR /app
-
-# Install system dependencies (for OpenCV / YOLO)
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
@@ -12,29 +11,46 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first (for caching)
-COPY requirements-cpu.txt .
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Upgrade pip + install dependencies
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+# Install Python dependencies (CPU-only PyTorch)
+COPY requirements-cpu.txt .
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements-cpu.txt
 
+# =============================================================================
+# Stage 2: Production image (minimal final stage)
+# =============================================================================
+FROM python:3.11-slim-bookworm
+
+# Install only runtime dependencies (no build tools)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 # Copy application code
+WORKDIR /app
 COPY main.py .
 COPY model.py .
 COPY service.py .
 COPY utils.py .
 COPY app.py .
 
-# Ensure model directory exists, then copy weights
+# Copy trained model weights
 RUN mkdir -p runs/detect/train/weights
 COPY runs/detect/train/weights/best.pt runs/detect/train/weights/
 
 # Expose API port
 EXPOSE 8000
 
-# Healthcheck to monitor container status
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
