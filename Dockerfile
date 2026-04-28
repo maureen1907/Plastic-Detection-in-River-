@@ -47,6 +47,13 @@ COPY app.py .
 RUN mkdir -p runs/detect/train/weights
 COPY runs/detect/train/weights/best.pt runs/detect/train/weights/
 
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
 # Expose API port
 EXPOSE 8000
 
