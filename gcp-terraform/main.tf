@@ -91,11 +91,12 @@ resource "google_compute_address" "master_ip" {
 }
 
 resource "google_compute_instance" "master" {
-  name         = "plastic-detection-master"
-  machine_type = var.machine_type
-  zone         = var.zone
-  tags         = ["k8s-node", "k8s-master"]
-  labels       = var.labels
+  name                      = "plastic-detection-master"
+  machine_type              = var.machine_type
+  zone                      = var.zone
+  tags                      = ["k8s-node", "k8s-master"]
+  labels                    = var.labels
+  allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
@@ -125,12 +126,13 @@ resource "google_compute_instance" "master" {
 # ---- Worker nodes ----------------------------------------------------------
 
 resource "google_compute_instance" "worker" {
-  count        = var.worker_count
-  name         = "plastic-detection-worker-${count.index + 1}"
-  machine_type = var.machine_type
-  zone         = var.zone
-  tags         = ["k8s-node", "k8s-worker"]
-  labels       = var.labels
+  count                     = var.worker_count
+  name                      = "plastic-detection-worker-${count.index + 1}"
+  machine_type              = var.machine_type
+  zone                      = var.zone
+  tags                      = ["k8s-node", "k8s-worker"]
+  labels                    = var.labels
+  allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {

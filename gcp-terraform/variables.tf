@@ -24,9 +24,9 @@ variable "zone" {
 # ---- Cluster sizing --------------------------------------------------------
 
 variable "machine_type" {
-  description = "GCE machine type. Assignment requires 4 vCPU + 8 GB RAM."
+  description = "GCE machine type. Assignment requires 4 vCPU + 8 GB RAM. Using E2 family because N1 capacity was unavailable in australia-southeast1-a."
   type        = string
-  default     = "n1-custom-4-8192" # exactly 4 vCPU + 8 GB
+  default     = "e2-custom-4-8192" # exactly 4 vCPU + 8 GB
 }
 
 variable "worker_count" {

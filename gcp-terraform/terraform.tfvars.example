@@ -11,7 +11,7 @@ region = "australia-southeast1"  # Sydney - change to your nearest region
 zone   = "australia-southeast1-a"
 
 # Assignment requires 4 vCPU + 8 GB RAM per VM
-machine_type      = "n1-custom-4-8192"
+machine_type      = "e2-custom-4-8192"
 worker_count      = 2
 boot_disk_size_gb = 30
 
