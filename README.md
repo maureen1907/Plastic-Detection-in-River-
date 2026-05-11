@@ -155,7 +155,98 @@ docker-compose down
 
 ---
 
-## Cloud Deployment (OCI + Terraform)
+## Cloud Deployment Phase 2: GCP + Kubernetes
+
+`gcp-terraform/` provisions a **3-node K8s cluster** on GCE (1 master + 2 workers), and `k8s/` contains the manifests that deploy the API onto the cluster with resource limits and readiness/liveness probes.
+
+### Architecture
+
+```
+            Internet
+                │
+                ▼
+        Any node IP : 30080  (NodePort)
+                │
+   ┌────────────┼────────────┐
+   ▼            ▼            ▼
+master       worker-1     worker-2
+(no pods)     api-pod      api-pod
+  k3s         k3s          k3s
+  4vCPU/16GB  4vCPU/16GB   4vCPU/16GB
+```
+
+- **k3s** is used instead of full kubeadm — lightweight CNCF-certified K8s, identical `kubectl`, installs via a single curl in cloud-init.
+- **NodePort 30080** is reachable on every node's external IP. Kube-proxy routes traffic to the right pod regardless of which node you hit.
+- Each pod is capped at **1 vCPU + 2 GiB** memory per the assignment rubric.
+
+### Prerequisites
+
+- GCP project with billing enabled
+- `gcloud` CLI installed and authenticated
+- Terraform ≥ 1.5
+
+### Quick start
+
+```bash
+# 1. Configure gcloud
+gcloud auth login
+gcloud auth application-default login
+gcloud config set project <YOUR_PROJECT_ID>
+gcloud services enable compute.googleapis.com iam.googleapis.com cloudresourcemanager.googleapis.com
+
+# 2. Provision the cluster
+cd gcp-terraform
+cp terraform.tfvars.example terraform.tfvars
+# edit terraform.tfvars with your project_id, ssh key path, etc.
+terraform init
+terraform apply
+
+# 3. Wait for k3s to finish bootstrapping (~3 min after apply)
+# Then SSH to master and verify
+ssh -i ~/.ssh/id_ed25519 ubuntu@$(terraform output -raw master_external_ip) \
+  'sudo kubectl get nodes'
+
+# 4. Apply the K8s manifests (from project root)
+cd ..
+scp -i ~/.ssh/id_ed25519 -r k8s ubuntu@$(terraform -chdir=gcp-terraform output -raw master_external_ip):/tmp/
+ssh -i ~/.ssh/id_ed25519 ubuntu@$(terraform -chdir=gcp-terraform output -raw master_external_ip) \
+  'sudo kubectl apply -f /tmp/k8s/namespace.yaml && sudo kubectl apply -f /tmp/k8s/'
+
+# 5. Verify the deployment
+ssh -i ~/.ssh/id_ed25519 ubuntu@$(terraform -chdir=gcp-terraform output -raw master_external_ip) \
+  'sudo kubectl get all -n plastic-detection'
+```
+
+### Accessing the API
+
+Once the pods are `1/1 Ready`, the API is reachable on every node:
+
+```bash
+MASTER_IP=$(terraform -chdir=gcp-terraform output -raw master_external_ip)
+curl http://$MASTER_IP:30080/
+curl http://$MASTER_IP:30080/ready
+```
+
+### Scaling
+
+```bash
+sudo kubectl scale deployment/plastic-detection-api -n plastic-detection --replicas=4
+```
+
+Or edit `k8s/deployment.yaml` and re-apply.
+
+### Teardown
+
+```bash
+cd gcp-terraform
+terraform destroy
+```
+
+Removes all 12 GCP resources.
+
+---
+
+## Cloud Deployment Phase 1: OCI + Terraform (single VM)
 
 `oci-terraform/` provisions a complete deployment on Oracle Cloud Infrastructure: VCN, subnet, internet gateway, route table, security list, and an Ubuntu 22.04 compute instance. Cloud-init then pulls the Docker image from Docker Hub and starts the container automatically. No manual SSH or `docker run` required.
 
