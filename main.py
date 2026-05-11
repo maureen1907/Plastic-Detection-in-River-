@@ -33,8 +33,18 @@ async def ready():
         raise HTTPException(status_code=503, detail="model not loaded")
     return {"status": "ready", "model": "yolov8m"}
 
-# Thread pool for running ML inference without blocking the event loop
-executor = ThreadPoolExecutor(max_workers=2)
+# Thread pool for running ML inference without blocking the event loop.
+#
+# IMPORTANT: max_workers=1 (not the FastAPI default of >1) because
+# ultralytics YOLO model state is not thread-safe -- concurrent inference
+# calls on the same model instance corrupt internal timing/profile objects
+# and raise `AttributeError: 'Profile' object has no attribute 'dt'`.
+#
+# True parallelism is achieved at the *process* level via uvicorn --workers,
+# where each worker has its own Python process and its own model instance.
+# Each worker's thread pool serialises inference within that process,
+# so workers can run inference truly in parallel without sharing state.
+executor = ThreadPoolExecutor(max_workers=1)
 
 
 class ImagePayload(BaseModel):
