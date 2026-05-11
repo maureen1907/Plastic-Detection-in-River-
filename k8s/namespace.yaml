@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: plastic-detection
+  labels:
+    app.kubernetes.io/name: plastic-detection
+    app.kubernetes.io/part-of: fit5225-a1
+    app.kubernetes.io/managed-by: kubectl

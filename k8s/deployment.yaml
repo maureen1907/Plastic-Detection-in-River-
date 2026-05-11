@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plastic-detection-api
+  namespace: plastic-detection
+  labels:
+    app.kubernetes.io/name: plastic-detection
+    app.kubernetes.io/component: api
+    app.kubernetes.io/version: v2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: plastic-detection
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: plastic-detection
+        app.kubernetes.io/component: api
+        app.kubernetes.io/version: v2
+    spec:
+      containers:
+        - name: api
+          image: mpha0039/plastic-detection:v2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+
+          # Resource limits per the assignment rubric:
+          #   CPU limit: 1.0 vCPU
+          #   Memory: sized to fit YOLOv8m (~700 MB working set) plus overhead.
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1000m"     # exactly 1 vCPU, per rubric
+              memory: "2Gi"
+
+          # Liveness: K8s restarts the pod if /healthz fails.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 60   # allow model load before first probe
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness: K8s only sends Service traffic to pods where /ready returns 200.
+          # /ready only returns 200 once the YOLO model is loaded into memory,
+          # preventing dropped requests during pod startup or replica scaling.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60      # allow up to ~5 min for model load on cold start
+            successThreshold: 1
