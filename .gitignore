@@ -5,6 +5,9 @@
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
+
+# Submission staging (rebuilt by build_submission.sh)
+submission/
 crash.log
 crash.*.log
 override.tf
