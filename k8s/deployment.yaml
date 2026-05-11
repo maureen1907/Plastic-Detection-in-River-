@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: mpha0039/plastic-detection:v3
+          image: mpha0039/plastic-detection:v4
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
