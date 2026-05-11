@@ -152,3 +152,96 @@ docker-compose down
 - **CPU-only PyTorch** - Reduces image size by ~2-3GB
 - **Layer caching** - Requirements copied before source code
 - **Healthcheck** - Monitors container health
+
+---
+
+## Cloud Deployment (OCI + Terraform)
+
+`oci-terraform/` provisions a complete deployment on Oracle Cloud Infrastructure: VCN, subnet, internet gateway, route table, security list, and an Ubuntu 22.04 compute instance. Cloud-init then pulls the Docker image from Docker Hub and starts the container automatically. No manual SSH or `docker run` required.
+
+### Prerequisites
+
+- OCI account with API key configured (Console → User Settings → API Keys)
+- [Terraform](https://developer.hashicorp.com/terraform/install) ≥ 1.5
+- Docker Hub account, with the image already built and pushed (see [Image publishing](#image-publishing) below)
+- An SSH key pair (`ssh-keygen -t ed25519` if you don't have one)
+
+### Quick start
+
+```bash
+cd oci-terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your OCI credentials and SSH key path
+
+terraform init
+terraform apply
+```
+
+After ~7 minutes, Terraform will output:
+
+```
+api_url            = "http://<public_ip>:8000"
+instance_public_ip = "<public_ip>"
+ssh_command        = "ssh -i ~/.ssh/id_ed25519 ubuntu@<public_ip>"
+```
+
+The API will be reachable at `api_url`. Interactive docs at `<api_url>/docs`.
+
+### What gets created
+
+| Resource | Purpose |
+|----------|---------|
+| VCN (10.0.0.0/16) | Virtual network |
+| Subnet (10.0.1.0/24) | Public subnet for the instance |
+| Internet gateway | Outbound internet access |
+| Route table | Routes 0.0.0.0/0 via internet gateway |
+| Security list | Inbound: SSH (22), API (8000), Streamlit (8501); egress: all |
+| Compute instance | VM.Standard.E2.1.Micro (AMD Always Free), Ubuntu 22.04 |
+
+All resources are tagged with `Project=plastic-detection`, `ManagedBy=terraform`.
+
+### Image publishing
+
+The compute instance pulls `${var.docker_image}` from Docker Hub on first boot. Before running `terraform apply`, build and push the image (the OCI VM is AMD x86_64, so cross-compile if you're on Apple Silicon):
+
+```bash
+# From the project root
+docker buildx build --platform linux/amd64 \
+  -t <dockerhub-username>/plastic-detection:latest \
+  --push .
+```
+
+Update `docker_image` in `terraform.tfvars` to point at your image, then run `terraform apply`.
+
+### Updating the running deployment
+
+To push code changes:
+
+1. Build and push a new image (same command as above; reuse `:latest` or use a new tag).
+2. Force a re-bootstrap of the VM:
+   ```bash
+   terraform apply -replace=module.compute.oci_core_instance.plastic_detection_instance
+   ```
+   This destroys and recreates only the compute instance (~2 min). Cloud-init pulls the new image and starts the container.
+
+### Teardown
+
+```bash
+terraform destroy
+```
+
+Removes all 6 resources in dependency order.
+
+### Project structure
+
+```
+oci-terraform/
+├── main.tf          # root composition: data sources, locals, module calls
+├── versions.tf      # terraform/provider version pins, provider config
+├── variables.tf     # input variable declarations (with validation)
+├── outputs.tf       # output declarations
+├── terraform.tfvars.example
+└── modules/
+    ├── network/     # VCN, subnet, IGW, route table, security list
+    └── compute/     # instance + cloud-init bootstrap
+```
