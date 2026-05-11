@@ -67,7 +67,7 @@ variable "ssh_public_key_path" {
 variable "docker_image" {
   description = "Docker image (registry/name:tag) for the plastic-detection API. Pulled and run by cloud-init on first boot."
   type        = string
-  default     = "maureen1907/plastic-detection:latest"
+  default     = "mpha0039/plastic-detection:latest"
 }
 
 # ---- Tagging ---------------------------------------------------------------
