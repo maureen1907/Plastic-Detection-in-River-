@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
@@ -16,6 +16,22 @@ async def root():
     return {
         "message": "wassup slayer. use /api/predict or /api/annotate"
     }
+
+
+@app.get("/healthz")
+async def healthz():
+    # Liveness: the process is alive and serving HTTP.
+    return {"status": "alive"}
+
+
+@app.get("/ready")
+async def ready():
+    # Readiness: the YOLO model has been loaded into memory and is callable.
+    # K8s uses this to gate traffic; pods stay out of the service rotation
+    # until this returns 200.
+    if model is None or not hasattr(model, "predict"):
+        raise HTTPException(status_code=503, detail="model not loaded")
+    return {"status": "ready", "model": "yolov8m"}
 
 # Thread pool for running ML inference without blocking the event loop
 executor = ThreadPoolExecutor(max_workers=2)
