@@ -34,6 +34,17 @@ TEST_IMAGE_PATH = Path(os.environ.get("LOCUST_TEST_IMAGE", DEFAULT_IMAGE))
 PREDICT_PATH = "/api/predict"
 ANNOTATE_PATH = "/api/annotate"
 
+# Comma-separated list of additional node IPs (NodePort exposes the service
+# on every node's external IP; spreading requests across all of them gives
+# kube-proxy on each node a fair chance to route to different pods, working
+# around iptables-mode kube-proxy's per-connection (rather than per-request)
+# load balancing).
+EXTRA_HOSTS = [
+    h.strip().rstrip("/")
+    for h in os.environ.get("LOCUST_EXTRA_HOSTS", "").split(",")
+    if h.strip()
+]
+
 
 @events.init.add_listener
 def _on_locust_init(environment, **_kwargs):
@@ -73,33 +84,44 @@ class PlasticDetectionUser(HttpUser):
             "image": self.image_b64,
         }
 
-    @task(3)
+    def _request(self, path: str, timeout: int):
+        """Wrap self.client.post so we can rotate the target host per request
+        when LOCUST_EXTRA_HOSTS is set. Each request opens a fresh connection
+        to a randomly-chosen node IP, bypassing kube-proxy's per-connection
+        stickiness and giving us true per-request load balancing across pods.
+        """
+        if EXTRA_HOSTS:
+            host = random.choice(EXTRA_HOSTS)
+            return self.client.post(
+                f"{host}{path}",
+                json=self._payload(),
+                name=path,
+                headers={"Connection": "close"},  # force fresh TCP -> fresh route
+                catch_response=True,
+                timeout=timeout,
+            )
+        return self.client.post(
+            path,
+            json=self._payload(),
+            name=path,
+            catch_response=True,
+            timeout=timeout,
+        )
+
+    @task(int(os.environ.get("LOCUST_WEIGHT_PREDICT", "3")))
     def predict(self) -> None:
         """POST /api/predict — returns detection JSON (boxes, classes, speed)."""
-        with self.client.post(
-            PREDICT_PATH,
-            json=self._payload(),
-            name=PREDICT_PATH,
-            catch_response=True,
-            timeout=30,
-        ) as resp:
+        with self._request(PREDICT_PATH, timeout=30) as resp:
             if resp.status_code != 200:
                 resp.failure(f"HTTP {resp.status_code}: {resp.text[:200]}")
             else:
-                # Optional: validate the response shape
                 body = resp.json()
                 if "detections" not in body:
                     resp.failure(f"Missing 'detections' in response: {body}")
 
-    @task(1)
+    @task(int(os.environ.get("LOCUST_WEIGHT_ANNOTATE", "1")))
     def annotate(self) -> None:
         """POST /api/annotate — returns annotated image + detection JSON."""
-        with self.client.post(
-            ANNOTATE_PATH,
-            json=self._payload(),
-            name=ANNOTATE_PATH,
-            catch_response=True,
-            timeout=60,
-        ) as resp:
+        with self._request(ANNOTATE_PATH, timeout=60) as resp:
             if resp.status_code != 200:
                 resp.failure(f"HTTP {resp.status_code}: {resp.text[:200]}")
