@@ -1,0 +1,36 @@
+# =============================================================================
+# Example terraform.tfvars
+#
+# Copy to terraform.tfvars and fill in your own values. The real
+# terraform.tfvars is gitignored because it contains credentials.
+# =============================================================================
+
+# ---- OCI authentication ----------------------------------------------------
+# Find these in the OCI Console:
+#   tenancy_ocid -> User menu (top right) -> Tenancy
+#   user_ocid    -> User menu -> User Settings
+#   fingerprint  -> User Settings -> API Keys (after uploading your public key)
+#   private_key_path -> Local path to the matching .pem private key file
+
+tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+user_ocid        = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+fingerprint      = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+private_key_path = "/path/to/your/oci_api_key.pem"
+region           = "ap-melbourne-1"  # change to your nearest OCI region
+
+# ---- Resource placement ----------------------------------------------------
+# Leave compartment_ocid empty to use the tenancy root compartment.
+
+compartment_ocid    = ""
+availability_domain = "1"  # ap-melbourne-1 has only 1 AD
+
+# ---- Compute ---------------------------------------------------------------
+
+shape               = "VM.Standard.E2.1.Micro"  # AMD Always Free tier
+ssh_public_key_path = "~/.ssh/id_ed25519.pub"
+
+# ---- Application -----------------------------------------------------------
+# Docker image to pull and run. Build and push yours before running apply:
+#   docker buildx build --platform linux/amd64 -t <user>/plastic-detection:latest --push .
+
+docker_image = "mpha0039/plastic-detection:latest"
