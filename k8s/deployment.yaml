@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: mpha0039/plastic-detection:v2
+          image: mpha0039/plastic-detection:v3
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -30,15 +30,17 @@ spec:
               protocol: TCP
 
           # Resource limits per the assignment rubric:
-          #   CPU limit: 1.0 vCPU
-          #   Memory: sized to fit YOLOv8m (~700 MB working set) plus overhead.
+          #   CPU limit: 1.0 vCPU (hard requirement)
+          #   Memory: 4 GiB. Headroom for two uvicorn worker processes, each
+          #   loading its own YOLO model copy (the architectural trick that
+          #   gives us true parallelism around the Python GIL).
           resources:
             requests:
               cpu: "500m"
               memory: "1Gi"
             limits:
               cpu: "1000m"     # exactly 1 vCPU, per rubric
-              memory: "2Gi"
+              memory: "4Gi"
 
           # Liveness: K8s restarts the pod if /healthz fails.
           livenessProbe:
