@@ -172,12 +172,13 @@ docker-compose down
 master       worker-1     worker-2
 (no pods)     api-pod      api-pod
   k3s         k3s          k3s
-  4vCPU/16GB  4vCPU/16GB   4vCPU/16GB
+  4vCPU/8GB   4vCPU/8GB    4vCPU/8GB
 ```
 
 - **k3s** is used instead of full kubeadm — lightweight CNCF-certified K8s, identical `kubectl`, installs via a single curl in cloud-init.
 - **NodePort 30080** is reachable on every node's external IP. Kube-proxy routes traffic to the right pod regardless of which node you hit.
-- Each pod is capped at **1 vCPU + 2 GiB** memory per the assignment rubric.
+- Each pod is capped at **1 vCPU** per the assignment rubric (memory limit 4 GiB for headroom with multi-worker uvicorn).
+- The deployed image (`mpha0039/plastic-detection:v4`) runs `uvicorn --workers 2` and uses YOLOv8n for sub-second inference. The fine-tuned YOLOv8m weights are still in the repo and can be loaded by setting `MODEL_PATH=runs/detect/train/weights/best.pt` in the container env.
 
 ### Prerequisites
 
@@ -243,6 +244,31 @@ terraform destroy
 ```
 
 Removes all 12 GCP resources.
+
+---
+
+## Phase 3: Load Testing with Locust
+
+`locust/locustfile.py` simulates concurrent users hitting `/api/predict` and `/api/annotate` with base64-encoded image payloads. See `locust/README.md` for setup and the recommended test sequence.
+
+Quick run against the live cluster:
+
+```bash
+cd locust
+pip install locust
+python3 -m locust -f locustfile.py --host http://<master-ip>:30080 \
+  --users 6 --spawn-rate 1 --run-time 60s --headless
+```
+
+For per-request load distribution across all 3 nodes (works around iptables-mode kube-proxy's per-connection stickiness):
+
+```bash
+LOCUST_EXTRA_HOSTS="http://master:30080,http://worker1:30080,http://worker2:30080" \
+  python3 -m locust -f locustfile.py --host http://master:30080 \
+  --users 9 --spawn-rate 1 --run-time 60s --headless
+```
+
+The deployed v4 architecture achieves **530ms p50 latency** for `/api/predict` and **2.7 QPS per pod** with zero error rate at moderate load — see the full performance write-up in the project Obsidian notes.
 
 ---
 
