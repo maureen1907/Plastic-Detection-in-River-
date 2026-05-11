@@ -1,5 +1,12 @@
 # Plastic-Detection-in-River
 
+> **🌐 Live deployed API:** http://35.197.187.242:30080
+> Interactive API docs: http://35.197.187.242:30080/docs
+> Probes: `/healthz` (liveness), `/ready` (readiness — gates on YOLO model load)
+> Inference endpoints: `POST /api/predict`, `POST /api/annotate`
+>
+> _Hosted on a 3-node k3s cluster on GCP (Sydney). 2× pod replicas of `mpha0039/plastic-detection:v4`. Cluster will be torn down 7 days after submission to release credits._
+
 Plastic pollution in marine environnement is a global threat. It threatens marine species health, human health, food security, costal tourism. More than 350 million tons of plastic are produced every year and it is estimated that more than 15 million tons end up in the world Ocean. The plastic then degrades over time into micro-plastic and both macro and microplastic have serious environmental impacts. Rivers are the very first source of plastic in Oceans. It is estimated that more than 80% of river plastic comes from only 1000 rivers. Organizations like the The Ocean Cleanup are investing resources to address the ocean plastic pollution at the root cause by cleaning rivers.
 
 Inorder to tackle the above problem, this is a streamlit app that detects whether there is plastic in river or not using Deep Learning techniques like Object Detection and state-of-the-art Object Detection Models like "You only look once (YOLO)".
