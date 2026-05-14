@@ -8,7 +8,7 @@
 
 ## Acknowledgment
 
-I used **Claude** (Anthropic's AI assistant, via the Claude Code CLI) extensively throughout this project as a collaborator. AI was used openly and responsibly per the university's Generative AI policy and the assignment's permission. All commits in the project repository are co-authored with Claude per Anthropic's attribution guidelines, and the AI's role is documented inline in commit messages and code comments where appropriate.
+I used **Claude** (Anthropic's AI assistant, via the Claude Code CLI) throughout this project as a collaborator. AI was used openly and responsibly per the university's Generative AI policy and the assignment's permission. All commits in the project repository are co-authored with Claude per Anthropic's attribution guidelines, and the AI's role is documented inline in commit messages and code comments where appropriate.
 
 This document summarises the areas where AI was used, presents representative prompts and AI responses, and identifies the decisions where I exercised independent judgement.
 

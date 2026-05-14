@@ -48,27 +48,54 @@ def load_all() -> pd.DataFrame:
 
 def find_breaking_point(group: pd.DataFrame) -> dict:
     """
-    Heuristic 'breaking point' per pod-count group:
-      * Walk user levels low->high.
-      * Last row where (failures == 0) AND (avg_latency_ms < 2 * smallest_avg_latency).
-    Returns dict with users, avg_latency, qps at that point.
+    Per the FIT5225 A1 rubric, the breaking point is "the threshold at which
+    response times degrade exponentially OR HTTP 500/503 errors begin to occur."
+
+    Operationalised:
+      * 'Exponential degradation' = latency growth ratio at successive
+        Locust user-count doublings > 2 (super-linear growth: when input
+        doubles, output more than doubles).
+      * 'Errors occur' = failures > 0.
+
+    Walks user levels low -> high; the first row that triggers either
+    criterion is the breaking point. The row *before* it is the maximum
+    stable point reported in the table.
     """
     g = group.sort_values("users").reset_index(drop=True)
     if g.empty:
         return {}
-    baseline_latency = g.iloc[0]["avg_latency_ms"]
-    stable = g[(g["failures"] == 0) & (g["avg_latency_ms"] < 2 * baseline_latency)]
-    if stable.empty:
-        # No stable point at all -> take the lowest-latency row regardless
-        best = g.sort_values("avg_latency_ms").iloc[0]
-    else:
-        best = stable.iloc[-1]
+
+    breaking_idx = None
+    for i in range(1, len(g)):
+        prev_latency = g.iloc[i - 1]["avg_latency_ms"]
+        cur = g.iloc[i]
+        ratio = cur["avg_latency_ms"] / prev_latency if prev_latency else float("inf")
+        # User counts double each step, so ratio > 2 means super-linear.
+        if int(cur["failures"]) > 0 or ratio > 2.0:
+            breaking_idx = i
+            break
+
+    if breaking_idx is None:
+        # System never broke within the tested range; report the last row.
+        last = g.iloc[-1]
+        return {
+            "pods": int(last["pods"]),
+            "max_stable_users": int(last["users"]),
+            "avg_latency_ms": float(last["avg_latency_ms"]),
+            "qps": float(last["qps"]),
+            "failures": int(last["failures"]),
+            "breaking_user_count": None,
+        }
+
+    max_stable = g.iloc[breaking_idx - 1]
+    breaking = g.iloc[breaking_idx]
     return {
-        "pods": int(best["pods"]),
-        "max_stable_users": int(best["users"]),
-        "avg_latency_ms": float(best["avg_latency_ms"]),
-        "qps": float(best["qps"]),
-        "failures": int(best["failures"]),
+        "pods": int(max_stable["pods"]),
+        "max_stable_users": int(max_stable["users"]),
+        "avg_latency_ms": float(max_stable["avg_latency_ms"]),
+        "qps": float(max_stable["qps"]),
+        "failures": int(max_stable["failures"]),
+        "breaking_user_count": int(breaking["users"]),
     }
 
 
@@ -86,7 +113,7 @@ def plot_latency(df: pd.DataFrame) -> None:
     ax.set_xscale("log", base=2)
     ax.set_xticks(sorted(df["users"].unique()))
     ax.get_xaxis().set_major_formatter(plt.ScalarFormatter())
-    ax.axhline(500, color="red", linestyle="--", linewidth=1, label="HD target (500 ms)")
+    ax.axhline(500, color="red", linestyle="--", linewidth=1, label="500 ms")
     ax.grid(True, which="both", linestyle=":", alpha=0.5)
     ax.legend(title="Replicas")
     fig.tight_layout()

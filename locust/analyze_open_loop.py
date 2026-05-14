@@ -93,7 +93,7 @@ def plot_latency(df: pd.DataFrame) -> None:
     ax.set_xlabel("Offered arrival rate λ (req/s)")
     ax.set_ylabel("Mean response time (ms)")
     ax.set_title("Open-loop: mean latency vs offered arrival rate")
-    ax.axhline(500, color="red", linestyle="--", linewidth=1, label="HD target (500 ms)")
+    ax.axhline(500, color="red", linestyle="--", linewidth=1, label="500 ms")
     ax.grid(True, which="both", linestyle=":", alpha=0.5)
     ax.legend(title="Replicas")
     fig.tight_layout()

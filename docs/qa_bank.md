@@ -122,7 +122,14 @@ It's what Locust does by default. Each simulated user is a sequential loop: requ
 
 ### 23. "What's the breaking point and how did you find it?"
 
-For each pod count, I ran Locust at user counts 1, 2, 4, 8, 16 for 45s each. The "breaking point" heuristic: highest user count where (a) zero failures AND (b) avg response time < 2× the single-user baseline. For all four pod configs (1, 2, 4, 8) the breaking point was 4 users — saturation hit at the same concurrency regardless of replicas, which is the key analytical finding.
+The rubric defines it as "the threshold at which response times degrade exponentially OR HTTP 500/503 errors begin to occur." I operationalised this as: the first user-count step where (a) failures appear, OR (b) the latency growth ratio at successive Locust user-count doublings exceeds 2× (i.e., super-linear / exponential growth). Since the v4 image has zero failures throughout (the thread-safety fix held), the latency criterion is what actually triggered.
+
+For each pod count, I ran Locust at user counts 1, 2, 4, 8, 16 for 45 s each. Results:
+
+- **1 pod, 2 pods, 8 pods**: max stable = 4 users (break at 8 — latency more than doubles)
+- **4 pods**: max stable = 8 users (break at 16 — the only configuration that handled 8 users sub-linearly)
+
+This is interesting because it shows horizontal scaling *does* help — 4 pods stretches the stable region to twice the user concurrency of the other configs. 8 pods doesn't help further, which together with the open-loop data points at a second bottleneck (kube-proxy iptables stickiness) capping the cluster around 6 req/s.
 
 ---
 
