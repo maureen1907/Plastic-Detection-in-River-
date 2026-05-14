@@ -1,0 +1,11 @@
+Requests      [total, rate, throughput]         420, 14.03, 0.82
+Duration      [total, attack, wait]             59.929s, 29.929s, 30s
+Latencies     [min, mean, 50, 90, 95, 99, max]  445.577ms, 28.257s, 30s, 30.001s, 30.001s, 30.001s, 30.011s
+Bytes In      [total, mean]                     15749, 37.50
+Bytes Out     [total, mean]                     21146195, 50348.08
+Success       [ratio]                           11.67%
+Status Codes  [code:count]                      0:371  200:49  
+Error Set:
+Post "http://35.197.187.242:30080/api/predict": readfrom tcp 192.168.1.10:65008->35.197.187.242:30080: write tcp 192.168.1.10:65008->35.197.187.242:30080: use of closed network connection
+Post "http://35.197.187.242:30080/api/predict": readfrom tcp 192.168.1.10:65022->35.197.187.242:30080: write tcp 192.168.1.10:65022->35.197.187.242:30080: use of closed network connection
+Post "http://35.197.187.242:30080/api/predict": context deadline exceeded (Client.Timeout exceeded while awaiting headers)

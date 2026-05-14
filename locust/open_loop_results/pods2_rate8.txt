@@ -1,0 +1,9 @@
+Requests      [total, rate, throughput]         240, 8.03, 3.92
+Duration      [total, attack, wait]             57.11s, 29.874s, 27.236s
+Latencies     [min, mean, 50, 90, 95, 99, max]  483.298ms, 17.682s, 18.744s, 29.36s, 30.001s, 30.001s, 30.001s
+Bytes In      [total, mean]                     71938, 299.74
+Bytes Out     [total, mean]                     96668320, 402784.67
+Success       [ratio]                           93.33%
+Status Codes  [code:count]                      0:16  200:224  
+Error Set:
+Post "http://35.197.187.242:30080/api/predict": context deadline exceeded (Client.Timeout exceeded while awaiting headers)

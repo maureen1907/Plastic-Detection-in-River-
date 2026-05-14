@@ -1,0 +1,12 @@
+Requests      [total, rate, throughput]         240, 8.03, 3.24
+Duration      [total, attack, wait]             53.125s, 29.874s, 23.251s
+Latencies     [min, mean, 50, 90, 95, 99, max]  181.625µs, 16.441s, 16.166s, 30.001s, 30.001s, 30.001s, 30.001s
+Bytes In      [total, mean]                     55259, 230.25
+Bytes Out     [total, mean]                     74227460, 309281.08
+Success       [ratio]                           71.67%
+Status Codes  [code:count]                      0:68  200:172  
+Error Set:
+Post "http://35.197.187.242:30080/api/predict": dial tcp 0.0.0.0:0->35.197.187.242:30080: connect: can't assign requested address
+Post "http://35.197.187.242:30080/api/predict": dial tcp 0.0.0.0:0->35.197.187.242:30080: connect: network is unreachable
+Post "http://35.197.187.242:30080/api/predict": readfrom tcp 192.168.1.10:64219->35.197.187.242:30080: write tcp 192.168.1.10:64219->35.197.187.242:30080: use of closed network connection
+Post "http://35.197.187.242:30080/api/predict": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
