@@ -37,15 +37,23 @@ cp k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml k8s/README.md \
 
 # ---- 4. Locust client script + 5. Experiment automation ----
 mkdir -p "${STAGING_DIR}/locust"
+# Locust files
 cp locust/locustfile.py locust/benchmark.sh locust/analyze.py \
    locust/README.md locust/REPORT_DRAFT.md \
    "${STAGING_DIR}/locust/"
-# Include the plots and aggregated CSVs (compact + valuable evidence)
+# Vegeta open-loop files
+cp locust/open_loop_benchmark.sh locust/analyze_open_loop.py locust/payload.json \
+   "${STAGING_DIR}/locust/" 2>/dev/null || true
+# Plots and aggregated CSVs (both closed-loop and open-loop)
 mkdir -p "${STAGING_DIR}/locust/plots"
 cp locust/plots/*.png locust/plots/*.csv "${STAGING_DIR}/locust/plots/" 2>/dev/null || true
-# Include the raw per-run CSVs for reproducibility (80 files, ~200 KB total)
+# Raw closed-loop per-run CSVs
 mkdir -p "${STAGING_DIR}/locust/results"
 cp locust/results/*.csv "${STAGING_DIR}/locust/results/" 2>/dev/null || true
+# Raw open-loop per-run outputs (.txt human-readable, .json machine-readable)
+mkdir -p "${STAGING_DIR}/locust/open_loop_results"
+cp locust/open_loop_results/*.txt locust/open_loop_results/*.json \
+   "${STAGING_DIR}/locust/open_loop_results/" 2>/dev/null || true
 
 # ---- 6. IaC scripts ----
 # Copy GCP + OCI Terraform, preserving the directory layout.
