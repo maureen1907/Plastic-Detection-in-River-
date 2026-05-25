@@ -1,0 +1,7 @@
+plastic-detection API end-to-end test
+Host: http://35.197.187.242:30080
+Images tested: 1
+
+image                                    /api/predict                        /api/annotate                      
+---------------------------------------- ----------------------------------- -----------------------------------
+DJI_0414.jpg                             OK count=1 in 10.89s                OK saved DJI_0414_annotated.jpg in 22.78s

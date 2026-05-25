@@ -39,7 +39,7 @@ spec:
               cpu: "500m"
               memory: "1Gi"
             limits:
-              cpu: "1000m"     # exactly 1 vCPU, per rubric
+              cpu: "1000m"     # exactly 1 vCPU
               memory: "4Gi"
 
           # Liveness: K8s restarts the pod if /healthz fails.
@@ -62,5 +62,5 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 5
-            failureThreshold: 60      # allow up to ~5 min for model load on cold start
+            failureThreshold: 60     
             successThreshold: 1

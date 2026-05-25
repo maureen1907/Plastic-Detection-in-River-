@@ -4,12 +4,13 @@
 FROM python:3.11-slim-bookworm AS builder
 
 # Install build dependencies
+#libsm6 libxext6 build tools for OpenCV and PyTorch
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
-    libglib2.0-0 \
-    libsm6 \
+    libglib2.0-0 \ 
+    libsm6 \ 
     libxext6 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/ *
 
 # Create virtual environment
 RUN python -m venv /opt/venv

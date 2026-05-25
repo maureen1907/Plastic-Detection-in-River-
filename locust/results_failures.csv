@@ -1,0 +1,2 @@
+Method,Name,Error,Occurrences
+POST,/api/predict,CatchResponseError('HTTP 0: '),1
